@@ -1,0 +1,37 @@
+{
+  "name": "virtual-desktop-pkg",
+  "version": "1.0.0",
+  "description": "Quickly switch between virtual desktop in windows",
+  "keywords": [
+    "typie",
+    "typie key launcher",
+    "typie package",
+    "applications",
+    "virtual desktop"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Rotem Grimberg <rotemgrim@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "electron-is": "^2.4.1",
+    "system-icon": "^0.1.2",
+    "typie-sdk": "^1.0.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/typie/applications-pkg.git"
+  },
+  "typie": {
+    "title": "VirtualDesktops",
+    "labels": [
+      {
+        "text": "Windows",
+        "style": "green"
+      }
+    ],
+    "description": "Quickly switch between virtual desktop in windows"
+  }
+}
