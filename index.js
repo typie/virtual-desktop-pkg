@@ -4,22 +4,23 @@ const {execFile} = require('child_process');
 const path = require('path');
 
 const listOfExecutablePaths = [
-    path.join(__dirname, './VirtualDesktop11Insider.exe'),
+    path.join(__dirname, './VirtualDesktopInsider.exe'),
     path.join(__dirname, './VirtualDesktop11.exe'),
+    path.join(__dirname, './VirtualDesktop11-21H2.exe'),
     path.join(__dirname, './VirtualDesktop.exe'),
-    path.join(__dirname, './VirtualDesktop1607.exe'),
-    path.join(__dirname, './VirtualDesktop1803.exe'),
+    path.join(__dirname, './VirtualDesktop2022.exe'),
+    path.join(__dirname, './VirtualDesktop2016.exe'),
     path.join(__dirname, './VirtualDesktopServer2022.exe'),
 ];
 
-class VirtualDesktops extends AbstractTypiePackage
-{
-
-    constructor(win, config, pkgPath){
+class VirtualDesktops extends AbstractTypiePackage {
+    constructor(win, config, pkgPath) {
         super(win, config, pkgPath);
-        this.win         = win;
+        this.win = win;
         this.packageName = 'VirtualDesktops';
         this.selectedExecutable = "";
+
+        this.desktopToActiveMap = {};
 
         globalShortcut.register('Alt+1', () => this.switchToDesktopNumber(1));
         globalShortcut.register('Alt+2', () => this.switchToDesktopNumber(2));
@@ -55,8 +56,71 @@ class VirtualDesktops extends AbstractTypiePackage
         }
     }
 
-    switchToDesktopNumber(num) {
-        this.callExecutable([`-switch:${num - 1}`]);
+    async switchToDesktopNumber(num) {
+        // before switch - save the current hwnd foreground window
+        const hwnd = await this.getCurrentActiveWindow();
+        if (hwnd) {
+            const activeDesktopNumber = await this.getCurrentActiveDesktop();
+            this.desktopToActiveMap[`desk_${activeDesktopNumber}`] = hwnd;
+        }
+
+        const index = num - 1;
+        console.log("switching to index: ", index);
+        this.callExecutable([`-Switch:${index}`], (stdout) => {
+            console.log("switch: ", stdout);
+            if (this.desktopToActiveMap[`desk_${index}`]) {
+                this.setFocusToWindow(this.desktopToActiveMap[`desk_${index}`]);
+            }
+        });
+
+    }
+
+    async setFocusToWindow(hwnd) {
+        setTimeout(() => {
+            const item = {
+                db: 'global',
+                t: 'SwitchTo',
+                p: hwnd,
+            }
+            const rowItem = TypieRowItem.create(item);
+            console.log("setting focus", rowItem.p, this.desktopToActiveMap);
+            this.typie.switchTo(rowItem).go();
+        }, 2000)
+
+
+        // return new Promise((resolve) => {
+        //     this.windowManager([`-setFocus`,`-hwnd`, hwnd], (stdout) => {
+        //         console.log("setFocus:", hwnd);
+        //         resolve();
+        //     });
+        // });
+    }
+
+    async getCurrentActiveWindow() {
+        return new Promise((resolve) => {
+            this.windowManager([`-getCurrent`], (stdout) => {
+                console.log("current active hwnd:", stdout);
+                if (stdout) {
+                    resolve(stdout.trim());
+                } else {
+                    resolve(0);
+                }
+            });
+        });
+    }
+
+    async getCurrentActiveDesktop() {
+        return new Promise((resolve, reject) => {
+            this.callExecutable([`-gcd`], (stdout) => {
+                const res = stdout.trim().match(/\s(\d*?)\)$/);
+                if (res) {
+                    console.log("current active desktop:", res[1]);
+                    resolve(res[1]);
+                } else {
+                    reject();
+                }
+            });
+        });
     }
 
     activate(pkgList, item, cb) {
@@ -84,6 +148,18 @@ class VirtualDesktops extends AbstractTypiePackage
         }
 
         execFile(this.selectedExecutable, args, (error, stdout, stderr) => {
+            callback && callback(stdout);
+            // if (error) {
+            //     this.handleExecutionError(error, stdout, stderr);
+            // } else {
+            //     callback && callback(stdout);
+            // }
+        });
+    }
+
+    windowManager(args, callback) {
+        const windowManagerPath = path.join(__dirname, './window-manager.exe');
+        execFile(windowManagerPath, args, (error, stdout, stderr) => {
             if (error) {
                 this.handleExecutionError(error, stdout, stderr);
             } else {
@@ -97,6 +173,7 @@ class VirtualDesktops extends AbstractTypiePackage
         // if (this.selectedExecutable) {
         //     console.error(error, stdout, stderr);
         // }
+        console.error("err:", stderr);
     }
 
     getDesktops(stdout) {
@@ -112,7 +189,7 @@ class VirtualDesktops extends AbstractTypiePackage
                     name = name.split(" (visible)")[0];
                 }
                 desktops.push({
-                    isVisible: isVisible, 
+                    isVisible: isVisible,
                     name: name,
                     wallpaper: splits[1].slice(0, -1)
                 });
@@ -150,5 +227,6 @@ class VirtualDesktops extends AbstractTypiePackage
         //     .catch(err => console.error("VirtualDesktops plugin insert error", err));
     }
 }
+
 module.exports = VirtualDesktops;
 
