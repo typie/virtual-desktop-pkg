@@ -59,12 +59,16 @@ class VirtualDesktops extends AbstractTypiePackage {
     async switchToDesktopNumber(num) {
         // before switch - save the current hwnd foreground window
         const hwnd = await this.getCurrentActiveWindow();
+        const index = num - 1;
+
         if (hwnd) {
             const activeDesktopNumber = await this.getCurrentActiveDesktop();
             this.desktopToActiveMap[`desk_${activeDesktopNumber}`] = hwnd;
+            if (index == activeDesktopNumber) {
+                return;
+            }
         }
 
-        const index = num - 1;
         console.log("switching to index: ", index);
         this.callExecutable([`-Switch:${index}`], (stdout) => {
             console.log("switch: ", stdout);
@@ -72,28 +76,17 @@ class VirtualDesktops extends AbstractTypiePackage {
                 this.setFocusToWindow(this.desktopToActiveMap[`desk_${index}`]);
             }
         });
-
     }
 
     async setFocusToWindow(hwnd) {
-        setTimeout(() => {
-            const item = {
-                db: 'global',
-                t: 'SwitchTo',
-                p: hwnd,
-            }
-            const rowItem = TypieRowItem.create(item);
-            console.log("setting focus", rowItem.p, this.desktopToActiveMap);
-            this.typie.switchTo(rowItem).go();
-        }, 2000)
-
-
-        // return new Promise((resolve) => {
-        //     this.windowManager([`-setFocus`,`-hwnd`, hwnd], (stdout) => {
-        //         console.log("setFocus:", hwnd);
-        //         resolve();
-        //     });
-        // });
+        const item = {
+            db: 'global',
+            t: 'SwitchTo',
+            p: hwnd,
+        }
+        const rowItem = TypieRowItem.create(item);
+        console.log("setting focus", rowItem.p, this.desktopToActiveMap);
+        return this.typie.switchTo(rowItem).go();
     }
 
     async getCurrentActiveWindow() {
