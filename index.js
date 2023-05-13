@@ -69,9 +69,9 @@ class VirtualDesktops extends AbstractTypiePackage {
             }
         }
 
-        console.log("switching to index: ", index);
+        // console.log("switching to index: ", index);
         this.callExecutable([`-Switch:${index}`], (stdout) => {
-            console.log("switch: ", stdout);
+            // console.log("switch: ", stdout);
             if (this.desktopToActiveMap[`desk_${index}`]) {
                 this.setFocusToWindow(this.desktopToActiveMap[`desk_${index}`]);
             }
@@ -85,14 +85,22 @@ class VirtualDesktops extends AbstractTypiePackage {
             p: hwnd,
         }
         const rowItem = TypieRowItem.create(item);
-        console.log("setting focus", rowItem.p, this.desktopToActiveMap);
+        // console.log("setting focus", rowItem.p, this.desktopToActiveMap);
         return this.typie.switchTo(rowItem).go();
+
+
+        // return new Promise((resolve) => {
+        //     this.windowManager([`-setFocus`,`-hwnd`, hwnd], (stdout) => {
+        //         console.log("setFocus:", hwnd);
+        //         resolve();
+        //     });
+        // });
     }
 
     async getCurrentActiveWindow() {
         return new Promise((resolve) => {
             this.windowManager([`-getCurrent`], (stdout) => {
-                console.log("current active hwnd:", stdout);
+                // console.log("current active hwnd:", stdout);
                 if (stdout) {
                     resolve(stdout.trim());
                 } else {
@@ -107,7 +115,7 @@ class VirtualDesktops extends AbstractTypiePackage {
             this.callExecutable([`-gcd`], (stdout) => {
                 const res = stdout.trim().match(/\s(\d*?)\)$/);
                 if (res) {
-                    console.log("current active desktop:", res[1]);
+                    // console.log("current active desktop:", res[1]);
                     resolve(res[1]);
                 } else {
                     reject();
@@ -117,7 +125,7 @@ class VirtualDesktops extends AbstractTypiePackage {
     }
 
     activate(pkgList, item, cb) {
-        console.log(`${this.packageName} switch to: ${item.title}`);
+        // console.log(`${this.packageName} switch to: ${item.title}`);
         this.callExecutable([`-Switch:${item.title}`], (stdout) => {
             const desktops = this.getDesktops(stdout);
             if (desktops.length > 0) {
